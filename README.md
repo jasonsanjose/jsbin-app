@@ -38,6 +38,6 @@ $ electron app/
 
 # JSBin
 
-## Notwortyh changes to jsbin
+## Noteworthy changes to jsbin
 
 * Change `memcached` dependency from `git://github.com/3rd-Eden/node-memcached#10733b0e487793dde1d3a4f9201b1ec41c0be0c6` to `^2.1.0` 

@@ -3,13 +3,15 @@
 var path = require('path'),
 	fs = require('fs-extra');
 
-var configFile = path.join(__dirname, 'jsbin.config.json');
+var configFile = path.join(__dirname, 'jsbin.config.json'),
+	homePath = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];;
 
 var config = {
 	'store': {
 		'adapter': 'file',
 		'file': {
-			'location': path.join(__dirname, 'jsbin-file')
+			// TODO user HOME or other user-defined location?
+			'location': path.join(homePath, 'jsbin-file')
 		}
 	}
 };
@@ -21,10 +23,13 @@ process.env.JSBIN_CONFIG = configFile;
 fs.writeJsonSync(configFile, config);
 
 // init jsbin server
-var jsbin = require('../lib/jsbin');
+var jsbin = require('../../lib/jsbin');
 var jsbinApp = jsbin.app;
 jsbinApp.connect();
 
 jsbinApp.on('connected', function () {
-	process.send({ type: 'connected' });
+	process.send({
+		type: 'connected',
+		config: config
+	});
 });

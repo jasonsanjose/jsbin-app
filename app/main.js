@@ -3,12 +3,17 @@
 var app = require('app'),
   BrowserWindow = require('browser-window'),
   Menu = require('menu'),
+  dialog = require('dialog'),
   shell = require('shell'),
+  path = require('path'),
   proc = require('child_process');
   
 app.commandLine.appendSwitch('remote-debugging-port', '9235');
-  
-var jsbinProc = proc.fork(__dirname + '/jsbin.js');
+
+// Fork jsbin server as a separate process
+var jsbinProc = proc.fork(__dirname + '/main/jsbin.js'),
+  jsbinConfig,
+  jsbinStoragePath;
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the javascript object is GCed.
@@ -17,8 +22,18 @@ var mainWindow = null,
   
 function loadUrl() {
   if (mainWindow && jsbinConnected) {
-    mainWindow.loadUrl('http://localhost:3000');
+    mainWindow.loadUrl('file://' + __dirname + '/render/index.html');
   }
+}
+
+function getWindow() {
+  return BrowserWindow.getFocusedWindow() || mainWindow;
+}
+
+function menuCallback(command) {
+  return function () {
+    getWindow().webContents.send('command', { command: command });
+  };
 }
 
 function initMenu() {
@@ -65,6 +80,91 @@ function initMenu() {
       ]
     },
     {
+      label: 'File',
+      submenu: [
+        {
+          label: 'New File',
+          accelerator: 'Command+N',
+          selector: 'newfile:',
+          click: menuCallback("file:new")
+        },
+        {
+          label: 'New Window',
+          accelerator: 'Shift+Command+N',
+          selector: 'newwindow:'
+        },
+        {
+          type: 'separator'
+        },
+        {
+          label: 'Open...',
+          accelerator: 'Command+O',
+          selector: 'open:',
+          click: function () {
+            var win = getWindow();
+            
+            dialog.showOpenDialog(win, {
+              defaultPath: jsbinStoragePath,
+              properties: ['openDirectory']
+            }, function (filenames) {
+              var filepath = filenames && filenames[0],
+                isValid = filepath && filepath.indexOf(jsbinStoragePath) === 0;
+              
+              // Dialog cancelled
+              if (!filepath) {
+                return;
+              }
+              
+              win.webContents.send('command', {
+                command: 'file:open',
+                name: path.basename(filepath),
+                path: filepath,
+                isValid: isValid
+              });
+            });
+          }
+        },
+//        {
+//          label: 'Open Recent',
+//          selector: 'openrecent:'
+//        },
+        {
+          label: 'Save',
+          accelerator: 'Command+S',
+          selector: 'save:',
+          click: function () {
+            var win = getWindow();
+            
+            dialog.showSaveDialog(win, {
+              defaultPath: jsbinStoragePath
+            }, function (filenames) {
+              var filepath = filenames && filenames[0],
+                isValid = filepath && filepath.indexOf(jsbinStoragePath) === 0;
+              
+              // Dialog cancelled
+              if (!filepath) {
+                return;
+              }
+              
+              win.webContents.send('command', {
+                command: 'file:save',
+                name: path.basename(filepath),
+                path: filepath,
+                isValid: isValid
+              });
+            });
+          }
+        },
+        {
+          type: 'separator'
+        },
+        {
+          label: 'TODO Show in Finder',
+          click: menuCallback("file:showinfinder")
+        }
+      ]
+    },
+    {
       label: 'Edit',
       submenu: [
         {
@@ -106,14 +206,28 @@ function initMenu() {
       label: 'View',
       submenu: [
         {
-          label: 'Reload',
-          accelerator: 'Command+R',
-          click: function() { BrowserWindow.getFocusedWindow().reloadIgnoringCache(); }
+          label: 'Output in Default Browser',
+          accelerator: 'Shift+Command+O',
+          click: menuCallback("view:browser:default")
         },
         {
-          label: 'Toggle DevTools',
+          type: 'separator'
+        },
+        {
+          label: 'Reload',
+          accelerator: 'Command+R',
+          click: function() {
+            getWindow().reloadIgnoringCache();
+          }
+        },
+        {
+          label: 'Toggle Render Process DevTools',
           accelerator: 'Alt+Command+I',
-          click: function() { mainWindow.openDevTools({ detach: true }); }
+          click: function() { getWindow().openDevTools({ detach: true }); }
+        },
+        {
+          label: 'Toggle WebView Process DevTools',
+          click: menuCallback("view:devtools")
         },
       ]
     },
@@ -151,6 +265,8 @@ function initMenu() {
 
 jsbinProc.on('message', function (m) {
   jsbinConnected = true;
+  jsbinConfig = m.config;
+  jsbinStoragePath = path.join(jsbinConfig.store.file.location, 'bins');
   loadUrl();
 });
 
@@ -169,10 +285,7 @@ app.on('ready', function() {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     'width': 800,
-    'height': 600,
-    // https://github.com/atom/electron/issues/254
-    // disable node to allow jquery to load (finds window.module)
-    'node-integration': false
+    'height': 600
   });
   
   loadUrl();
@@ -186,3 +299,12 @@ app.on('ready', function() {
     mainWindow = null;
   });
 });
+
+app.on('window-all-closed', function() {
+  app.quit();
+});
+
+app.on('quit', function () {
+  jsbinProc.kill();
+  process.exit();
+})
