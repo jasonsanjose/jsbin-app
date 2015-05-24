@@ -1,0 +1,19 @@
+{
+  "name": "jsbin-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "cd lib/jsbin; npm install;"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron-prebuilt": "^0.26.0",
+    "electron-rebuild": "^0.1.4"
+  },
+  "dependencies": {
+    "fs-extra": "^0.18.3"
+  }
+}
