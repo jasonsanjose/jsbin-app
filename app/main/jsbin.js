@@ -8,9 +8,8 @@ var configFile = path.join(__dirname, 'jsbin.config.json'),
 
 var config = {
 	'store': {
-		'adapter': 'file',
-		'file': {
-			// TODO user HOME or other user-defined location?
+		'adapter': 'app',
+		'app': {
 			'location': path.join(homePath, 'jsbin-file')
 		}
 	}
