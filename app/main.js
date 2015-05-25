@@ -266,7 +266,7 @@ function initMenu() {
 jsbinProc.on('message', function (m) {
   jsbinConnected = true;
   jsbinConfig = m.config;
-  jsbinStoragePath = path.join(jsbinConfig.store.file.location, 'bins');
+  jsbinStoragePath = path.join(jsbinConfig.store.app.location, 'bins');
   loadUrl();
 });
 

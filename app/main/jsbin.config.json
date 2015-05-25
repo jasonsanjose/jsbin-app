@@ -1,8 +1,0 @@
-{
-  "store": {
-    "adapter": "file",
-    "file": {
-      "location": "/Users/jasonsanjose/jsbin-file"
-    }
-  }
-}

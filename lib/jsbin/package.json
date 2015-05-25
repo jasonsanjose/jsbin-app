@@ -39,6 +39,7 @@
     "feature-gateway": "0.0.4",
     "file-db": "0.0.2",
     "flatten.js": "0.1.0",
+    "fs-extra": "^0.18.4",
     "handlebars": "~2.0.0-alpha.2",
     "hbs": "~2.7.0",
     "jade": "~1.4.2",
